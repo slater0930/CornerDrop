@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>CornerDrop</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.slater0930.cornerdrop</string>
+    <key>CFBundleName</key>
+    <string>Corner Drop</string>
+    <key>CFBundleDisplayName</key>
+    <string>Corner Drop</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>SUFeedURL</key>
+    <string>https://raw.githubusercontent.com/slater0930/CornerDrop/main/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>etcmM0EH1GrLJCwpqf66P9+Y7xPSVT4tJ6hmdmwGHUY=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Corner Drop shows your most recent downloads when you hover a screen corner.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Corner Drop shows the most recent files in the folder you chose to watch.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Corner Drop shows the most recent files in the folder you chose to watch.</string>
+</dict>
+</plist>

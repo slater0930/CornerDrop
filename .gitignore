@@ -1,0 +1,11 @@
+# Swift Package Manager build output
+.build/
+.swiftpm/
+
+# App bundle produced by build.sh
+build/
+
+# macOS
+.DS_Store
+tools/
+releases/
