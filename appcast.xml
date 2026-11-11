@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Corner Drop</title>
+    <item>
+      <title>Version 1.1.0</title>
+      <pubDate>Wed, 11 Nov 2026 02:01:18 +0000</pubDate>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Folder expansion, expandable list, and automatic updates.</p>]]></description>
+      <enclosure url="https://github.com/slater0930/CornerDrop/releases/download/v1.1.0/CornerDrop-1.1.0.zip" sparkle:edSignature="mV0r4qF0SKAvxE8fJCwtXLkHH1aArDo6eos9c09EQaqTO8f92yu60Ur8fwnsnqXRNpyIooLB0kHIq/LxJhNLDg==" length="1171362" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>
