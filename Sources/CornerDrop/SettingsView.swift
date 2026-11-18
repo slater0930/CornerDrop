@@ -69,7 +69,7 @@ struct SettingsView: View {
             } header: {
                 Text("Clicking a file")
             } footer: {
-                Text("Expand folder only affects folders (files ignore it); the chevron on a folder always expands it too. Hover a file and press Space for Quick Look. Right-click for more options. Drag a file into any app.")
+                Text("Expand folder only affects folders (files ignore it); the chevron on a folder always expands it too. Click selects a file; ⌘-click adds or removes files, ⇧-click selects a range, ⌘A selects all, Esc clears. Dragging or right-clicking a selected file acts on the whole selection. Hover a file and press Space for Quick Look.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

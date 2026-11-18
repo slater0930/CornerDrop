@@ -31,6 +31,8 @@ final class PanelState: ObservableObject {
     @Published var children: [String: [FileItem]] = [:]
     /// True when the list is taller than the screen and scrolls.
     @Published var scrolls = false
+    /// Paths of selected files (⌘/⇧-click), dragged and acted on together.
+    @Published var selectedIDs: Set<String> = []
 }
 
 /// Borderless, non-activating floating panel. It can become key (for Space / Esc)
@@ -99,6 +101,7 @@ final class PanelController: NSObject {
     private var appToRestore: NSRunningApplication?
     private var hoveredItem: FileItem?
     private var instantToggle: (id: String, clicks: Int)?
+    private var selectionAnchor: String?
     private var cancellables = Set<AnyCancellable>()
     private var globalClickMonitor: Any?
 
@@ -377,6 +380,7 @@ final class PanelController: NSObject {
                 self.state.children = [:]
                 self.state.scrolls = false
                 self.hoveredItem = nil
+                self.clearSelection()
             }
         }
     }
@@ -384,7 +388,9 @@ final class PanelController: NSObject {
     private func itemsChanged() {
         switch mode {
         case .hidden: break
-        case .list: present(fromHidden: false)
+        case .list:
+            pruneSelection()
+            present(fromHidden: false)
         case .peek:
             if let item = state.peekItem, !store.items.contains(where: { $0.id == item.id }) { hide() }
         }
@@ -454,6 +460,7 @@ final class PanelController: NSObject {
         }
         if children != state.children { state.children = children }
         if expanded != state.expandedFolders { state.expandedFolders = expanded }
+        pruneSelection()
         if mode == .list { present(fromHidden: false) }
     }
 
@@ -462,8 +469,79 @@ final class PanelController: NSObject {
         hide()
     }
 
-    func handleClick(_ item: FileItem, count: Int) {
+    // MARK: Selection (Finder-style: click, ⌘-click, ⇧-click)
+
+    /// Files in the order they appear on screen, top to bottom (including expanded folder contents).
+    private func displayOrder() -> [FileItem] {
+        let top = Array(store.items.prefix(visibleCount))
+        let rows = DisplayRow.build(top: top, expanded: state.expandedFolders,
+                                    children: state.children, newestFirst: state.corner.isTop)
+        return rows.compactMap { row in
+            if case let .file(item, _) = row { return item }
+            return nil
+        }
+    }
+
+    private var selectedItems: [FileItem] {
+        displayOrder().filter { state.selectedIDs.contains($0.id) }
+    }
+
+    /// What an action on `item` applies to: the whole selection if `item` is part of a
+    /// multi-selection (like Finder), otherwise just `item`.
+    func targets(for item: FileItem) -> [FileItem] {
+        guard state.selectedIDs.count > 1, state.selectedIDs.contains(item.id) else { return [item] }
+        let items = selectedItems
+        return items.isEmpty ? [item] : items
+    }
+
+    /// Drops selected files that are no longer on screen (trashed, collapsed, scrolled out of the list).
+    private func pruneSelection() {
+        guard !state.selectedIDs.isEmpty else { return }
+        let visible = Set(displayOrder().map(\.id))
+        let kept = state.selectedIDs.intersection(visible)
+        if kept != state.selectedIDs { state.selectedIDs = kept }
+        if let anchor = selectionAnchor, !visible.contains(anchor) { selectionAnchor = nil }
+    }
+
+    private func clearSelection() {
+        if !state.selectedIDs.isEmpty { state.selectedIDs = [] }
+        selectionAnchor = nil
+    }
+
+    func handleClick(_ item: FileItem, count: Int, modifiers: NSEvent.ModifierFlags = []) {
         pendingClick?.cancel()
+
+        // ⌘ / ⇧ clicks only change the selection; they never open or expand anything.
+        let selectionMods = modifiers.intersection([.command, .shift])
+        if mode == .list && !selectionMods.isEmpty {
+            instantToggle = nil
+            let order = displayOrder()
+            if selectionMods.contains(.shift), let anchor = selectionAnchor,
+               let a = order.firstIndex(where: { $0.id == anchor }),
+               let b = order.firstIndex(where: { $0.id == item.id }) {
+                let range = Set(order[min(a, b)...max(a, b)].map(\.id))
+                // ⇧ replaces the selection with the range; ⌘⇧ adds the range to it.
+                state.selectedIDs = selectionMods.contains(.command) ? state.selectedIDs.union(range) : range
+            } else if selectionMods.contains(.command) {
+                if state.selectedIDs.contains(item.id) {
+                    state.selectedIDs.remove(item.id)
+                } else {
+                    state.selectedIDs.insert(item.id)
+                }
+                selectionAnchor = item.id
+            } else {
+                state.selectedIDs = [item.id]
+                selectionAnchor = item.id
+            }
+            return
+        }
+
+        // A plain click selects just this file (then runs the click action as usual).
+        if mode == .list && count == 1 {
+            state.selectedIDs = [item.id]
+            selectionAnchor = item.id
+        }
+
         let clicks = min(max(count, 1), 3)
         let action = settings.action(forClickCount: clicks)
 
@@ -511,6 +589,10 @@ final class PanelController: NSObject {
     }
 
     func toggleQuickLook(_ item: FileItem) {
+        toggleQuickLook([item])
+    }
+
+    func toggleQuickLook(_ items: [FileItem]) {
         // Quick Look's panel only shows for an active app, so activate briefly
         // and hand focus back when it closes.
         if !NSApp.isActive {
@@ -518,23 +600,32 @@ final class PanelController: NSObject {
             NSApp.activate(ignoringOtherApps: true)
         }
         panel.makeKey()
-        QuickLookController.shared.toggle(item.url)
+        QuickLookController.shared.toggle(items.map(\.url))
     }
 
     func trash(_ item: FileItem) {
+        trash([item])
+    }
+
+    func trash(_ items: [FileItem]) {
         state.armedTrashID = nil
-        do {
-            try FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
-        } catch {
-            NSSound.beep()
+        var failed = false
+        for item in items {
+            do {
+                try FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
+            } catch {
+                failed = true
+            }
         }
+        if failed { NSSound.beep() }
+        state.selectedIDs.subtract(items.map(\.id))
         store.scheduleReload(delay: 0.05)
     }
 
-    func copy(_ item: FileItem) {
+    func copy(_ items: [FileItem]) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.writeObjects([item.url as NSURL])
+        pb.writeObjects(items.map { $0.url as NSURL })
     }
 
     func openFolder() {
@@ -557,6 +648,9 @@ final class PanelController: NSObject {
     }
 
     func contextMenu(for item: FileItem) -> NSMenu {
+        let items = targets(for: item)
+        if items.count > 1 { return multiContextMenu(for: items) }
+
         let menu = NSMenu()
         menu.autoenablesItems = false
         menu.addItem(ClosureMenuItem("Open") { [weak self] in self?.perform(.open, on: item) })
@@ -568,9 +662,29 @@ final class PanelController: NSObject {
         menu.addItem(.separator())
         menu.addItem(ClosureMenuItem("Reveal in Finder") { [weak self] in self?.perform(.revealInFinder, on: item) })
         menu.addItem(ClosureMenuItem("Quick Look") { [weak self] in self?.toggleQuickLook(item) })
-        menu.addItem(ClosureMenuItem("Copy") { [weak self] in self?.copy(item) })
+        menu.addItem(ClosureMenuItem("Copy") { [weak self] in self?.copy([item]) })
         menu.addItem(.separator())
         menu.addItem(ClosureMenuItem("Move to Trash") { [weak self] in self?.trash(item) })
+        return menu
+    }
+
+    private func multiContextMenu(for items: [FileItem]) -> NSMenu {
+        let n = items.count
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(ClosureMenuItem("Open \(n) Items") { [weak self] in
+            items.forEach { NSWorkspace.shared.open($0.url) }
+            self?.hide()
+        })
+        menu.addItem(.separator())
+        menu.addItem(ClosureMenuItem("Reveal in Finder") { [weak self] in
+            NSWorkspace.shared.activateFileViewerSelecting(items.map(\.url))
+            self?.hide()
+        })
+        menu.addItem(ClosureMenuItem("Quick Look \(n) Items") { [weak self] in self?.toggleQuickLook(items) })
+        menu.addItem(ClosureMenuItem("Copy \(n) Items") { [weak self] in self?.copy(items) })
+        menu.addItem(.separator())
+        menu.addItem(ClosureMenuItem("Move \(n) Items to Trash") { [weak self] in self?.trash(items) })
         return menu
     }
 
@@ -613,12 +727,23 @@ final class PanelController: NSObject {
         switch event.keyCode {
         case 49: // Space
             if let item = hoveredItem ?? (mode == .peek ? state.peekItem : nil) {
-                toggleQuickLook(item)
+                toggleQuickLook(targets(for: item))
+                return true
+            }
+            if !state.selectedIDs.isEmpty {
+                toggleQuickLook(selectedItems)
                 return true
             }
             return false
-        case 53: // Esc
-            hide()
+        case 53: // Esc: clear the selection first, then close
+            if !state.selectedIDs.isEmpty {
+                clearSelection()
+            } else {
+                hide()
+            }
+            return true
+        case 0 where event.modifierFlags.contains(.command) && mode == .list: // ⌘A
+            state.selectedIDs = Set(displayOrder().map(\.id))
             return true
         default:
             return false

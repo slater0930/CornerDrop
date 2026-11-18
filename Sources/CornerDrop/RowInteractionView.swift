@@ -63,19 +63,27 @@ final class RowInteractionNSView: NSView, NSDraggingSource {
         guard hypot(b.x - a.x, b.y - a.y) > 4 else { return }
         dragStarted = true
 
-        let draggingItem = NSDraggingItem(pasteboardWriter: item.url as NSURL)
+        // Dragging a selected file drags the whole selection, like Finder.
         let start = convert(a, from: nil)
-        draggingItem.setDraggingFrame(NSRect(x: start.x - 24, y: start.y - 24, width: 48, height: 48),
-                                      contents: controller.dragImage(for: item))
+        let files = controller.targets(for: item)
+        let draggingItems = files.enumerated().map { index, file -> NSDraggingItem in
+            let draggingItem = NSDraggingItem(pasteboardWriter: file.url as NSURL)
+            let offset = CGFloat(min(index, 4)) * 4
+            draggingItem.setDraggingFrame(
+                NSRect(x: start.x - 24 + offset, y: start.y - 24 - offset, width: 48, height: 48),
+                contents: controller.dragImage(for: file))
+            return draggingItem
+        }
         controller.isDragging = true
-        let session = beginDraggingSession(with: [draggingItem], event: down, source: self)
+        let session = beginDraggingSession(with: draggingItems, event: down, source: self)
+        session.draggingFormation = files.count > 1 ? .stack : .none
         session.animatesToStartingPositionsOnCancelOrFail = true
     }
 
     override func mouseUp(with event: NSEvent) {
         defer { downEvent = nil }
         guard !dragStarted, let item else { return }
-        controller?.handleClick(item, count: event.clickCount)
+        controller?.handleClick(item, count: event.clickCount, modifiers: event.modifierFlags)
     }
 
     override func rightMouseDown(with event: NSEvent) {

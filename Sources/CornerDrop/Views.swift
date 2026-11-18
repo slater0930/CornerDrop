@@ -263,6 +263,7 @@ struct FileRow: View {
         let hovered = state.hoveredID == item.id
         let armed = state.armedTrashID == item.id
         let expanded = state.expandedFolders.contains(item.id)
+        let selected = state.mode == .list && state.selectedIDs.contains(item.id)
         let folderWidth: CGFloat = item.isDirectory ? 26 : 0
 
         ZStack(alignment: .trailing) {
@@ -306,8 +307,12 @@ struct FileRow: View {
         }
         .frame(height: Layout.rowHeight)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.primary.opacity(hovered ? 0.09 : 0))
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.accentColor.opacity(selected ? 0.28 : 0))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(hovered ? 0.07 : 0))
+            }
         )
     }
 }

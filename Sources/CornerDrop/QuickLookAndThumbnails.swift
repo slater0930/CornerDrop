@@ -6,19 +6,21 @@ import QuickLookThumbnailing
 final class QuickLookController: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
     static let shared = QuickLookController()
 
-    private(set) var url: URL?
+    private(set) var urls: [URL] = []
 
     var isVisible: Bool {
         QLPreviewPanel.sharedPreviewPanelExists() && QLPreviewPanel.shared().isVisible
     }
 
-    func toggle(_ url: URL) {
-        guard let panel = QLPreviewPanel.shared() else { return }
-        if panel.isVisible && self.url == url {
+    /// Shows the files in Quick Look (arrow keys page through several), or closes it
+    /// if it's already showing exactly these files.
+    func toggle(_ urls: [URL]) {
+        guard let panel = QLPreviewPanel.shared(), !urls.isEmpty else { return }
+        if panel.isVisible && self.urls == urls {
             panel.orderOut(nil)
             return
         }
-        self.url = url
+        self.urls = urls
         panel.dataSource = self
         panel.delegate = self
         if panel.isVisible {
@@ -29,11 +31,11 @@ final class QuickLookController: NSObject, QLPreviewPanelDataSource, QLPreviewPa
     }
 
     nonisolated func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
-        MainActor.assumeIsolated { url == nil ? 0 : 1 }
+        MainActor.assumeIsolated { urls.count }
     }
 
     nonisolated func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
-        MainActor.assumeIsolated { url as NSURL? }
+        MainActor.assumeIsolated { urls.indices.contains(index) ? urls[index] as NSURL : nil }
     }
 }
 
