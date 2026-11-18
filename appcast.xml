@@ -3,13 +3,13 @@
   <channel>
     <title>Corner Drop</title>
     <item>
-      <title>Version 1.2.0</title>
-      <pubDate>Wed, 18 Nov 2026 02:20:09 +0000</pubDate>
-      <sparkle:version>3</sparkle:version>
-      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+      <title>Version 1.2.1</title>
+      <pubDate>Wed, 18 Nov 2026 02:25:28 +0000</pubDate>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<p>Select several files at once, like Finder: click, Cmd-click, Shift-click, Cmd-A. Drag, right-click or Quick Look a selection to act on all of it.</p>]]></description>
-      <enclosure url="https://github.com/slater0930/CornerDrop/releases/download/v1.2.0/CornerDrop-1.2.0.zip" sparkle:edSignature="b7oyTsDAKBTZGgCRSU9mDOu8dThx+NHsBawJKSoGUL/hOJxUjfb8dpbj34yHDJcCdixxXSxq6hRBX+pMmnGgDg==" length="1180070" type="application/octet-stream"/>
+      <description><![CDATA[<p>New app icon.</p>]]></description>
+      <enclosure url="https://github.com/slater0930/CornerDrop/releases/download/v1.2.1/CornerDrop-1.2.1.zip" sparkle:edSignature="hei7Z8YqbI3tZdeaCYJTEHf2zcyKGm1KVogOT7SvGzYgjiK83CB3eoSzdRDIOlTiruEcYojDFrhTQdN5DMdDDA==" length="1680889" type="application/octet-stream"/>
     </item>
   </channel>
 </rss>
